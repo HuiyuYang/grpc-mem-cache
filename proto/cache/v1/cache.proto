@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package cache.v1;
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/HuiyuYang/grpc-mem-cache/proto/cache/v1;cachev1";
+
+// CacheService is a single-node, in-memory key/value cache.
+service CacheService {
+  // Set stores value under key, replacing any previous entry.
+  // An unset or zero ttl means the entry never expires.
+  rpc Set(SetRequest) returns (SetResponse);
+
+  // Get returns the stored value, or reports whether the key is missing or
+  // expired.
+  rpc Get(GetRequest) returns (GetResponse);
+
+  // Delete removes key. Deleting a missing or expired key is not an error.
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
+}
+
+message SetRequest {
+  // key must be non-empty.
+  string key = 1;
+
+  // value may be empty.
+  bytes value = 2;
+
+  // ttl is the time-to-live for this entry. When omitted or zero, the entry
+  // never expires. A negative ttl is rejected with InvalidArgument.
+  google.protobuf.Duration ttl = 3;
+}
+
+message SetResponse {}
+
+message GetRequest {
+  // key must be non-empty.
+  string key = 1;
+}
+
+message GetResponse {
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    // The value is present and not expired; value and expires_at are set.
+    STATUS_FOUND = 1;
+    // No entry exists for the key.
+    STATUS_NOT_FOUND = 2;
+    // An entry existed but its TTL elapsed; it has been removed.
+    STATUS_EXPIRED = 3;
+  }
+
+  Status status = 1;
+
+  // value is set only when status is STATUS_FOUND.
+  bytes value = 2;
+
+  // expires_at is set only when status is STATUS_FOUND and the entry has a
+  // TTL. It is omitted for entries that never expire.
+  google.protobuf.Timestamp expires_at = 3;
+}
+
+message DeleteRequest {
+  // key must be non-empty.
+  string key = 1;
+}
+
+message DeleteResponse {
+  // deleted reports whether a live entry was removed. It is false when the key
+  // was missing or already expired.
+  bool deleted = 1;
+}
