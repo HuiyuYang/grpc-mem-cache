@@ -377,6 +377,88 @@ func (x *DeleteResponse) GetDeleted() bool {
 	return false
 }
 
+type ListKeysRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListKeysRequest) Reset() {
+	*x = ListKeysRequest{}
+	mi := &file_cache_v1_cache_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListKeysRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListKeysRequest) ProtoMessage() {}
+
+func (x *ListKeysRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_cache_v1_cache_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListKeysRequest.ProtoReflect.Descriptor instead.
+func (*ListKeysRequest) Descriptor() ([]byte, []int) {
+	return file_cache_v1_cache_proto_rawDescGZIP(), []int{6}
+}
+
+type ListKeysResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// keys contains the keys of all live entries. It is empty when the cache is
+	// empty or every entry has expired. The order is unspecified.
+	Keys          []string `protobuf:"bytes,1,rep,name=keys,proto3" json:"keys,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListKeysResponse) Reset() {
+	*x = ListKeysResponse{}
+	mi := &file_cache_v1_cache_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListKeysResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListKeysResponse) ProtoMessage() {}
+
+func (x *ListKeysResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_cache_v1_cache_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListKeysResponse.ProtoReflect.Descriptor instead.
+func (*ListKeysResponse) Descriptor() ([]byte, []int) {
+	return file_cache_v1_cache_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ListKeysResponse) GetKeys() []string {
+	if x != nil {
+		return x.Keys
+	}
+	return nil
+}
+
 var File_cache_v1_cache_proto protoreflect.FileDescriptor
 
 const file_cache_v1_cache_proto_rawDesc = "" +
@@ -404,11 +486,15 @@ const file_cache_v1_cache_proto_rawDesc = "" +
 	"\rDeleteRequest\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\"*\n" +
 	"\x0eDeleteResponse\x12\x18\n" +
-	"\adeleted\x18\x01 \x01(\bR\adeleted2\xb3\x01\n" +
+	"\adeleted\x18\x01 \x01(\bR\adeleted\"\x11\n" +
+	"\x0fListKeysRequest\"&\n" +
+	"\x10ListKeysResponse\x12\x12\n" +
+	"\x04keys\x18\x01 \x03(\tR\x04keys2\xf6\x01\n" +
 	"\fCacheService\x122\n" +
 	"\x03Set\x12\x14.cache.v1.SetRequest\x1a\x15.cache.v1.SetResponse\x122\n" +
 	"\x03Get\x12\x14.cache.v1.GetRequest\x1a\x15.cache.v1.GetResponse\x12;\n" +
-	"\x06Delete\x12\x17.cache.v1.DeleteRequest\x1a\x18.cache.v1.DeleteResponseB<Z:github.com/HuiyuYang/grpc-mem-cache/proto/cache/v1;cachev1b\x06proto3"
+	"\x06Delete\x12\x17.cache.v1.DeleteRequest\x1a\x18.cache.v1.DeleteResponse\x12A\n" +
+	"\bListKeys\x12\x19.cache.v1.ListKeysRequest\x1a\x1a.cache.v1.ListKeysResponseB<Z:github.com/HuiyuYang/grpc-mem-cache/proto/cache/v1;cachev1b\x06proto3"
 
 var (
 	file_cache_v1_cache_proto_rawDescOnce sync.Once
@@ -423,7 +509,7 @@ func file_cache_v1_cache_proto_rawDescGZIP() []byte {
 }
 
 var file_cache_v1_cache_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_cache_v1_cache_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_cache_v1_cache_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_cache_v1_cache_proto_goTypes = []any{
 	(GetResponse_Status)(0),       // 0: cache.v1.GetResponse.Status
 	(*SetRequest)(nil),            // 1: cache.v1.SetRequest
@@ -432,24 +518,28 @@ var file_cache_v1_cache_proto_goTypes = []any{
 	(*GetResponse)(nil),           // 4: cache.v1.GetResponse
 	(*DeleteRequest)(nil),         // 5: cache.v1.DeleteRequest
 	(*DeleteResponse)(nil),        // 6: cache.v1.DeleteResponse
-	(*durationpb.Duration)(nil),   // 7: google.protobuf.Duration
-	(*timestamppb.Timestamp)(nil), // 8: google.protobuf.Timestamp
+	(*ListKeysRequest)(nil),       // 7: cache.v1.ListKeysRequest
+	(*ListKeysResponse)(nil),      // 8: cache.v1.ListKeysResponse
+	(*durationpb.Duration)(nil),   // 9: google.protobuf.Duration
+	(*timestamppb.Timestamp)(nil), // 10: google.protobuf.Timestamp
 }
 var file_cache_v1_cache_proto_depIdxs = []int32{
-	7, // 0: cache.v1.SetRequest.ttl:type_name -> google.protobuf.Duration
-	0, // 1: cache.v1.GetResponse.status:type_name -> cache.v1.GetResponse.Status
-	8, // 2: cache.v1.GetResponse.expires_at:type_name -> google.protobuf.Timestamp
-	1, // 3: cache.v1.CacheService.Set:input_type -> cache.v1.SetRequest
-	3, // 4: cache.v1.CacheService.Get:input_type -> cache.v1.GetRequest
-	5, // 5: cache.v1.CacheService.Delete:input_type -> cache.v1.DeleteRequest
-	2, // 6: cache.v1.CacheService.Set:output_type -> cache.v1.SetResponse
-	4, // 7: cache.v1.CacheService.Get:output_type -> cache.v1.GetResponse
-	6, // 8: cache.v1.CacheService.Delete:output_type -> cache.v1.DeleteResponse
-	6, // [6:9] is the sub-list for method output_type
-	3, // [3:6] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	9,  // 0: cache.v1.SetRequest.ttl:type_name -> google.protobuf.Duration
+	0,  // 1: cache.v1.GetResponse.status:type_name -> cache.v1.GetResponse.Status
+	10, // 2: cache.v1.GetResponse.expires_at:type_name -> google.protobuf.Timestamp
+	1,  // 3: cache.v1.CacheService.Set:input_type -> cache.v1.SetRequest
+	3,  // 4: cache.v1.CacheService.Get:input_type -> cache.v1.GetRequest
+	5,  // 5: cache.v1.CacheService.Delete:input_type -> cache.v1.DeleteRequest
+	7,  // 6: cache.v1.CacheService.ListKeys:input_type -> cache.v1.ListKeysRequest
+	2,  // 7: cache.v1.CacheService.Set:output_type -> cache.v1.SetResponse
+	4,  // 8: cache.v1.CacheService.Get:output_type -> cache.v1.GetResponse
+	6,  // 9: cache.v1.CacheService.Delete:output_type -> cache.v1.DeleteResponse
+	8,  // 10: cache.v1.CacheService.ListKeys:output_type -> cache.v1.ListKeysResponse
+	7,  // [7:11] is the sub-list for method output_type
+	3,  // [3:7] is the sub-list for method input_type
+	3,  // [3:3] is the sub-list for extension type_name
+	3,  // [3:3] is the sub-list for extension extendee
+	0,  // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_cache_v1_cache_proto_init() }
@@ -463,7 +553,7 @@ func file_cache_v1_cache_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cache_v1_cache_proto_rawDesc), len(file_cache_v1_cache_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   6,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

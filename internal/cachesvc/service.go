@@ -77,6 +77,11 @@ func (s *Service) Delete(ctx context.Context, req *cachev1.DeleteRequest) (*cach
 	return &cachev1.DeleteResponse{Deleted: s.store.Delete(req.GetKey())}, nil
 }
 
+// ListKeys returns the keys of all live entries.
+func (s *Service) ListKeys(ctx context.Context, req *cachev1.ListKeysRequest) (*cachev1.ListKeysResponse, error) {
+	return &cachev1.ListKeysResponse{Keys: s.store.Keys()}, nil
+}
+
 func validateKey(key string) error {
 	if key == "" {
 		return status.Error(codes.InvalidArgument, "key must not be empty")

@@ -3,6 +3,7 @@ package cache
 import (
 	"bytes"
 	"fmt"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -181,6 +182,33 @@ func TestValuesAreCopied(t *testing.T) {
 	}
 }
 
+func TestKeys(t *testing.T) {
+	clock := newFakeClock()
+	store := NewStoreWithClock(clock.Now)
+
+	if got := store.Keys(); len(got) != 0 {
+		t.Fatalf("Keys() on empty store = %v, want no keys", got)
+	}
+
+	store.Set("alpha", []byte("value"), 0)
+	store.Set("beta", []byte("value"), 10*time.Second)
+	store.Set("expired", []byte("value"), time.Second)
+
+	clock.Advance(2 * time.Second)
+
+	got := store.Keys()
+	slices.Sort(got)
+	want := []string{"alpha", "beta"}
+	if !slices.Equal(got, want) {
+		t.Fatalf("Keys() = %v, want %v", got, want)
+	}
+
+	// Keys reclaims expired entries, so the next lookup is a plain miss.
+	if got := store.Get("expired"); got.State != StateNotFound {
+		t.Fatalf("Get(expired) state = %v, want StateNotFound", got.State)
+	}
+}
+
 func TestConcurrentAccess(t *testing.T) {
 	store := NewStore()
 
@@ -197,7 +225,7 @@ func TestConcurrentAccess(t *testing.T) {
 			defer wg.Done()
 			for i := 0; i < iterations; i++ {
 				key := fmt.Sprintf("key-%d", (g+i)%keys)
-				switch i % 4 {
+				switch i % 5 {
 				case 0:
 					store.Set(key, []byte(key), 0)
 				case 1:
@@ -208,6 +236,8 @@ func TestConcurrentAccess(t *testing.T) {
 					store.Get(key)
 				case 3:
 					store.Delete(key)
+				case 4:
+					store.Keys()
 				}
 			}
 		}(g)

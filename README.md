@@ -7,6 +7,7 @@
 - `Set`：写入 key/value，支持可选 TTL；不设置或 TTL 为 0 时永不过期。
 - `Get`：读取数据，通过响应状态区分「不存在」和「已过期」，并在命中带 TTL 的数据时返回到期时间。
 - `Delete`：删除数据；删除不存在或已过期的 key 不报错。
+- `ListKeys`：返回所有未过期 key 的列表；过期条目会被清理并忽略，顺序不保证。
 - 并发安全：存储层使用 `sync.RWMutex`，gRPC 服务可同时处理多个请求。
 - 服务入口支持通过 `-addr` 配置监听地址，并在收到 SIGINT/SIGTERM 时优雅退出。
 - 本次不包含持久化、集群和认证。
@@ -66,13 +67,15 @@ proto 定义见 [`proto/cache/v1/cache.proto`](proto/cache/v1/cache.proto)。
 | `Set` | `key`, `value`, 可选 `ttl` | 空 | 写入或覆盖 key；`ttl` 为 `google.protobuf.Duration` |
 | `Get` | `key` | `status`, `value`, `expires_at` | 命中、缺失、过期分别返回 `STATUS_FOUND`、`STATUS_NOT_FOUND`、`STATUS_EXPIRED` |
 | `Delete` | `key` | `deleted` | 仅当删除了未过期的数据时 `deleted` 为 `true` |
+| `ListKeys` | 空 | `keys` | 返回所有未过期 key；顺序不保证，过期条目会被清理并忽略 |
 
 行为约定：
 
 - `key` 不能为空，否则返回 gRPC `InvalidArgument`。
 - `ttl` 未设置或为 0 表示永不过期；负数或非法 `Duration` 返回 `InvalidArgument`。
-- 过期是惰性的：条目在 TTL 到期后不再被读取，并在下一次 `Get`/`Delete` 时清理。没有后台清理协程，因此无人访问的过期条目会一直占用内存，直到进程退出。
+- 过期是惰性的：条目在 TTL 到期后不再被读取，并在下一次 `Get`/`Delete`/`ListKeys` 时清理。没有后台清理协程，因此无人访问的过期条目会一直占用内存，直到进程退出。
 - `Get` 通过响应中的 `status` 字段表达业务状态，而不是返回 gRPC 错误，便于调用方区分「不存在」和「已过期」。
+- `ListKeys` 只返回未过期的 key；遍历时会顺带清理已过期的条目，返回顺序不保证。该接口会扫描整个存储并持有写锁，key 数量很大时会阻塞其他请求，不适合在超大缓存上频繁调用。
 - 同一个 key 并发写入时最后一次生效；单次请求内 key/value 是原子读写。
 
 ## 生成代码
@@ -124,6 +127,10 @@ grpcurl -plaintext -d '{"key":"foo"}' \
 # Delete
 grpcurl -plaintext -d '{"key":"foo"}' \
   127.0.0.1:50051 cache.v1.CacheService/Delete
+
+# ListKeys：返回所有未过期的 key
+grpcurl -plaintext -d '{}' \
+  127.0.0.1:50051 cache.v1.CacheService/ListKeys
 ```
 
 ### Go 客户端
@@ -164,6 +171,12 @@ if err != nil {
 if resp.GetStatus() == cachev1.GetResponse_STATUS_FOUND {
     fmt.Println(string(resp.GetValue()))
 }
+
+keys, err := client.ListKeys(ctx, &cachev1.ListKeysRequest{})
+if err != nil {
+    log.Fatal(err)
+}
+fmt.Println(keys.GetKeys())
 ```
 
 import 路径：
@@ -185,4 +198,4 @@ go test -race ./...
 go vet ./...
 ```
 
-测试覆盖读写、覆盖写、删除、TTL 过期（含精确到期边界）、零/负 TTL、不存在与过期状态区分、value 拷贝隔离以及并发读写/删除/过期清理。
+测试覆盖读写、覆盖写、删除、key 列表（含过期条目清理）、TTL 过期（含精确到期边界）、零/负 TTL、不存在与过期状态区分、value 拷贝隔离以及并发读写/删除/过期清理。
