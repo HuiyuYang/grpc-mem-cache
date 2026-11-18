@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"slices"
 	"time"
 
 	"google.golang.org/grpc"
@@ -46,6 +47,14 @@ func main() {
 	}
 	fmt.Printf("get: status=%s value=%q expires_at=%v\n",
 		resp.GetStatus(), resp.GetValue(), resp.GetExpiresAt().AsTime())
+
+	// List the keys of all live entries.
+	keys, err := client.ListKeys(ctx, &cachev1.ListKeysRequest{})
+	if err != nil {
+		log.Fatalf("list keys: %v", err)
+	}
+	slices.Sort(keys.GetKeys())
+	fmt.Printf("list keys: %v\n", keys.GetKeys())
 
 	// Delete it.
 	del, err := client.Delete(ctx, &cachev1.DeleteRequest{Key: "greeting"})

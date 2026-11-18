@@ -141,3 +141,22 @@ func (s *Store) Delete(key string) bool {
 	delete(s.entries, key)
 	return !e.expired(s.now())
 }
+
+// Keys returns the keys of all live entries. Expired entries are reclaimed and
+// omitted. The order of the keys is unspecified.
+func (s *Store) Keys() []string {
+	now := s.now()
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	keys := make([]string, 0, len(s.entries))
+	for key, e := range s.entries {
+		if e.expired(now) {
+			delete(s.entries, key)
+			continue
+		}
+		keys = append(keys, key)
+	}
+	return keys
+}

@@ -19,9 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	CacheService_Set_FullMethodName    = "/cache.v1.CacheService/Set"
-	CacheService_Get_FullMethodName    = "/cache.v1.CacheService/Get"
-	CacheService_Delete_FullMethodName = "/cache.v1.CacheService/Delete"
+	CacheService_Set_FullMethodName      = "/cache.v1.CacheService/Set"
+	CacheService_Get_FullMethodName      = "/cache.v1.CacheService/Get"
+	CacheService_Delete_FullMethodName   = "/cache.v1.CacheService/Delete"
+	CacheService_ListKeys_FullMethodName = "/cache.v1.CacheService/ListKeys"
 )
 
 // CacheServiceClient is the client API for CacheService service.
@@ -38,6 +39,9 @@ type CacheServiceClient interface {
 	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error)
 	// Delete removes key. Deleting a missing or expired key is not an error.
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
+	// ListKeys returns the keys of all live entries. Expired entries are
+	// reclaimed and omitted. The order of the keys is unspecified.
+	ListKeys(ctx context.Context, in *ListKeysRequest, opts ...grpc.CallOption) (*ListKeysResponse, error)
 }
 
 type cacheServiceClient struct {
@@ -78,6 +82,16 @@ func (c *cacheServiceClient) Delete(ctx context.Context, in *DeleteRequest, opts
 	return out, nil
 }
 
+func (c *cacheServiceClient) ListKeys(ctx context.Context, in *ListKeysRequest, opts ...grpc.CallOption) (*ListKeysResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListKeysResponse)
+	err := c.cc.Invoke(ctx, CacheService_ListKeys_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CacheServiceServer is the server API for CacheService service.
 // All implementations must embed UnimplementedCacheServiceServer
 // for forward compatibility.
@@ -92,6 +106,9 @@ type CacheServiceServer interface {
 	Get(context.Context, *GetRequest) (*GetResponse, error)
 	// Delete removes key. Deleting a missing or expired key is not an error.
 	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
+	// ListKeys returns the keys of all live entries. Expired entries are
+	// reclaimed and omitted. The order of the keys is unspecified.
+	ListKeys(context.Context, *ListKeysRequest) (*ListKeysResponse, error)
 	mustEmbedUnimplementedCacheServiceServer()
 }
 
@@ -110,6 +127,9 @@ func (UnimplementedCacheServiceServer) Get(context.Context, *GetRequest) (*GetRe
 }
 func (UnimplementedCacheServiceServer) Delete(context.Context, *DeleteRequest) (*DeleteResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Delete not implemented")
+}
+func (UnimplementedCacheServiceServer) ListKeys(context.Context, *ListKeysRequest) (*ListKeysResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListKeys not implemented")
 }
 func (UnimplementedCacheServiceServer) mustEmbedUnimplementedCacheServiceServer() {}
 func (UnimplementedCacheServiceServer) testEmbeddedByValue()                      {}
@@ -186,6 +206,24 @@ func _CacheService_Delete_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CacheService_ListKeys_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListKeysRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CacheServiceServer).ListKeys(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CacheService_ListKeys_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CacheServiceServer).ListKeys(ctx, req.(*ListKeysRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CacheService_ServiceDesc is the grpc.ServiceDesc for CacheService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -204,6 +242,10 @@ var CacheService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Delete",
 			Handler:    _CacheService_Delete_Handler,
+		},
+		{
+			MethodName: "ListKeys",
+			Handler:    _CacheService_ListKeys_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

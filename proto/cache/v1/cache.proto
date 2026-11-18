@@ -19,6 +19,10 @@ service CacheService {
 
   // Delete removes key. Deleting a missing or expired key is not an error.
   rpc Delete(DeleteRequest) returns (DeleteResponse);
+
+  // ListKeys returns the keys of all live entries. Expired entries are
+  // reclaimed and omitted. The order of the keys is unspecified.
+  rpc ListKeys(ListKeysRequest) returns (ListKeysResponse);
 }
 
 message SetRequest {
@@ -70,4 +74,12 @@ message DeleteResponse {
   // deleted reports whether a live entry was removed. It is false when the key
   // was missing or already expired.
   bool deleted = 1;
+}
+
+message ListKeysRequest {}
+
+message ListKeysResponse {
+  // keys contains the keys of all live entries. It is empty when the cache is
+  // empty or every entry has expired. The order is unspecified.
+  repeated string keys = 1;
 }

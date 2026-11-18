@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -220,6 +221,70 @@ func TestZeroTTLDoesNotExpire(t *testing.T) {
 	}
 }
 
+func TestListKeys(t *testing.T) {
+	clock := newFakeClock()
+	client := newTestClient(t, clock)
+	ctx := t.Context()
+
+	resp, err := client.ListKeys(ctx, &cachev1.ListKeysRequest{})
+	if err != nil {
+		t.Fatalf("ListKeys on empty cache: %v", err)
+	}
+	if len(resp.GetKeys()) != 0 {
+		t.Fatalf("ListKeys on empty cache = %v, want no keys", resp.GetKeys())
+	}
+
+	for _, item := range []struct {
+		key string
+		ttl time.Duration
+	}{
+		{key: "alpha"},
+		{key: "beta", ttl: 30 * time.Second},
+		{key: "expired", ttl: 10 * time.Second},
+	} {
+		if _, err := client.Set(ctx, &cachev1.SetRequest{
+			Key:   item.key,
+			Value: []byte("value"),
+			Ttl:   durationpb.New(item.ttl),
+		}); err != nil {
+			t.Fatalf("Set(%q): %v", item.key, err)
+		}
+	}
+
+	clock.Advance(10 * time.Second)
+
+	resp, err = client.ListKeys(ctx, &cachev1.ListKeysRequest{})
+	if err != nil {
+		t.Fatalf("ListKeys: %v", err)
+	}
+	got := resp.GetKeys()
+	slices.Sort(got)
+	want := []string{"alpha", "beta"}
+	if !slices.Equal(got, want) {
+		t.Fatalf("ListKeys = %v, want %v", got, want)
+	}
+
+	// ListKeys reclaims expired entries, so the next lookup is a plain miss.
+	gotResp, err := client.Get(ctx, &cachev1.GetRequest{Key: "expired"})
+	if err != nil {
+		t.Fatalf("Get(expired): %v", err)
+	}
+	if gotResp.GetStatus() != cachev1.GetResponse_STATUS_NOT_FOUND {
+		t.Fatalf("Get(expired) status = %v, want STATUS_NOT_FOUND", gotResp.GetStatus())
+	}
+
+	if _, err := client.Delete(ctx, &cachev1.DeleteRequest{Key: "alpha"}); err != nil {
+		t.Fatalf("Delete(alpha): %v", err)
+	}
+	resp, err = client.ListKeys(ctx, &cachev1.ListKeysRequest{})
+	if err != nil {
+		t.Fatalf("ListKeys after delete: %v", err)
+	}
+	if got := resp.GetKeys(); !slices.Equal(got, []string{"beta"}) {
+		t.Fatalf("ListKeys after delete = %v, want [beta]", got)
+	}
+}
+
 func TestInvalidArguments(t *testing.T) {
 	client := newTestClient(t, newFakeClock())
 	ctx := t.Context()
@@ -335,6 +400,10 @@ func TestConcurrentRPCs(t *testing.T) {
 				}
 				if _, err := client.Delete(ctx, &cachev1.DeleteRequest{Key: key}); err != nil {
 					errCh <- fmt.Errorf("Delete(%q): %w", key, err)
+					return
+				}
+				if _, err := client.ListKeys(ctx, &cachev1.ListKeysRequest{}); err != nil {
+					errCh <- fmt.Errorf("ListKeys: %w", err)
 					return
 				}
 			}
